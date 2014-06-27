@@ -153,7 +153,93 @@ drag_story, 'Glen identified as hostile'
   :args [:finished]}]
 	    </code></pre>
             <p>Easy copy &amp; paste to a unit test for repeatability</p>
+            <p>Makes generating series of actions very easy</p>
+          </section>
+        </section>
+        <section>
+          <section>
+            <h2>Examples!</h2>
+          </section>
+          <section>
+            <h2>Change Story Type</h2>
+            <pre><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+(defspec ^:selenium change-story-type 20
+  (prop/for-all [actions (gen/not-empty (gen/vector (gen/hash-map
+                       :type (gen/return ::change-type)
+                       :story (gen/elements (map :id @stories))
+                       :args (gen/elements
+                               [[:feature] [:release] [:bug] [:chore]]))))]
+                (perform-actions actions)))
+            </code></pre>
+            <p>Or factoring out the reusable action generator</p>
+            <pre><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+(def type-generator #(gen/hash-map
+                       :type (gen/return ::change-type)
+                       :story (gen/elements (map :id @stories))
+                       :args (gen/elements
+                               [[:feature] [:release] [:bug] [:chore]])))
 
+(defspec ^:selenium change-story-type 20
+  (prop/for-all [actions (gen/not-empty (gen/vector (type-generator)))]
+                (perform-actions actions)))
+            </code></pre>
+          </section>
+          <section>
+            <h2>Adding Comments</h2>
+            <pre><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+(def comment-generator  #(gen/hash-map
+                          :type (gen/return ::add-comment)
+                          :story (gen/elements (map :id @stories))
+                          :args (gen/such-that (fn [v] (= (count v) 1))
+                                               (gen/vector gen/string))))
+
+(defspec ^:selenium add-comment 10
+  (prop/for-all [actions (gen/not-empty (gen/vector (comment-generator)))]
+                (perform-actions actions)))
+
+            </code></pre>
+          </section>
+          <section>
+            <h2>Change Story Type</h2>
+            <p>Generator</p>
+            <pre><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+(def state-generator #(gen/one-of
+                       [(gen/hash-map
+                         :type (gen/return ::change-state)
+                         :story (gen/elements (map :id
+                                                   (filter (comp
+                                                            (partial = "feature")
+                                                            :story_type)
+                                                           @stories)))
+                         :args (gen/elements
+                                [[:started] [:finished] [:delivered] [:accepted]]))
+                        (gen/hash-map
+                         :type (gen/return ::change-state)
+                         :story (gen/elements (map :id
+                                                   (filter (fn [story]
+                                                             (#{"chore" "bug"}
+                                                              (:story_type story)))
+                                                           @stories)))
+                         :args (gen/elements [[:started] [:accepted]]))]))
+            </code></pre>
+            <p>The Tests</p>
+            <pre><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+(defspec ^:selenium change-story-state 10
+    (prop/for-all [actions (gen/not-empty (gen/vector (state-generator)))]
+                  (perform-actions actions)))
+            </code></pre>
+          </section>
+          <section>
+            <h2>Mixed Actions</h2>
+            <pre><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+(defspec ^:selenium mixed-actions 10
+  (prop/for-all [actions (gen/not-empty (gen/vector (gen/one-of
+                                                      [(comment-generator)
+                                                       (state-generator)
+                                                       (type-generator)])))]
+                (perform-actions actions)))
+
+            </code></pre>
           </section>
         </section>
       </div>
