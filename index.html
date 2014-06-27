@@ -43,8 +43,8 @@
       <!-- Any section element inside of this container is displayed as a slide -->
       <div class="slides">
 	<section>
-	  <h1>Generative Testing &amp; You</h1>
-	  <h3>Made Easy</h3>
+	  <h1>Generative Testing</h1>
+	  <h3>Complexity Made Easy</h3>
 	</section>
 
 	<section>
@@ -64,7 +64,7 @@
             <ul>
               <li>Replace Unit Tests</li>
               <li>Replace JS, or Ruby</li>
-              <li>Test Visual Behavior</li>
+              <li>Test Visual Behavior (CSS &amp; Rendering)</li>
             </ul>
           </section>
         </section>
@@ -72,15 +72,16 @@
         <section>
           <section>
             <h2>The Differences Between Unit Tests and Generative</h2>
-            <p>The main difference between unit tests and generative tests are how the example data is made.</p>
-            <p>Unit tests require that the engineer or tester come up with a test case and enter it in by hand.</p>
-            <p>Generative tests require that the engineer describe the shape of all the data, and let the machine come up with all of the combinations</p>
+            <p>The difference is how the example data is made.</p>
+            <p>Unit tests require hand entered behavior</p>
+            <p>Generative tests require description of possible behaviors, the machine makes the combinations</p>
           </section>
 
 
           <section>
             <h2>Example Based Tests</h2>
-            <p>Most unit &amp; integration tests depend on a concrete set of actions or example data</p>
+            <p>A series of imperative actions</p>
+            <p>Simple but tedious to write, easy to debug, easy to miss edges</p>
 	    <pre><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
 drag_story = 'Learn to love as humans do'
 
@@ -100,13 +101,19 @@ drag_story, 'Glen identified as hostile'
           </section>
           <section>
             <h2>Shape Based Testing</h2>
-            <p>Generative tests depend on describing the "shape" of expected data</p>
-            <p>This forces the tests to define properties that the system must always have</p>
+            <p>Depend on describing the "shape" of expected data</p>
+            <p>Harder to write, much better at catching edge cases</p>
 	    <pre><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
 (check-that "Factoring 2 * a prime returns 2 and the prime" 1000
   (prop/for-all [prime (gen/elements primes)]
-    (= [2 prime] (prime-factors (* 2 prime)))))					</code></pre>
-
+    (= [2 prime] (prime-factors (* 2 prime)))))
+            </code></pre>
+            <pre><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+(check-that "The product of primes should factor to the original primes" 1000
+   (prop/for-all [prime-seq (gen/vector (gen/elements primes))]
+     (= prime-seq
+        (prime-factors (apply * prime-seq)))))
+            </code></pre>
           </section>
         </section>
 
@@ -116,7 +123,7 @@ drag_story, 'Glen identified as hostile'
             <ul>
               <li>Server Client Parity</li>
               <li>Reliable Data Setup</li>
-
+              <li>Actions as Data</li>
             </ul>
           </section>
           <section>
@@ -134,6 +141,19 @@ drag_story, 'Glen identified as hostile'
               <li>Reset original story state and expire cache after each run</li>
               <li>Ensures that each test starts at a clean state quickly</li>
             </ul>
+          </section>
+
+          <section>
+            <h2>Actions as Data</h2>
+            <p>Each test generates a list of hashmaps, each representing an action a user could take.</p>
+            <p>A single function then runs those actions &amp; checks that nothing horrible happened.</p>
+	    <pre><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+[{:type ::change-state
+  :story 2186
+  :args [:finished]}]
+	    </code></pre>
+            <p>Easy copy &amp; paste to a unit test for repeatability</p>
+
           </section>
         </section>
       </div>
