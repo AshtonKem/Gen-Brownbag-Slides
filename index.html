@@ -15,7 +15,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
     <link rel="stylesheet" href="css/reveal.min.css">
-    <link rel="stylesheet" href="css/theme/default.css" id="theme">
+    <link rel="stylesheet" href="css/theme/moon.css" id="theme">
 
     <!-- For syntax highlighting -->
     <link rel="stylesheet" href="lib/css/zenburn.css">
@@ -113,44 +113,109 @@ drag_story, 'Glen identified as hostile'
             </code></pre>
           </section>
         </section>
-
         <section>
           <section>
-            <h2>Techniques</h2>
-            <ul>
-              <li>Server Client Parity</li>
-              <li>Reliable Data Setup</li>
-              <li>Actions as Data</li>
-            </ul>
+            <h2>How Generators Work</h2>
+            <p>There are 2 kinds of generators, basic and composite</p>
+            <p>Basic generators produce primitive types like ints and strings</p>
+            <p>Composite generators used to produce collection types</p>
+            <p>They can be combined to produce arbitrary complexity</p>
           </section>
+
           <section>
-            <h2>Server Client Parity</h2>
+            <h2>Basic Generators</h2>
             <ul>
-              <li>Test has access to browser, database, and API</li>
-              <li>It can compare story ordering between browser and database)</li>
+              <li>gen/int</li>
+              <li>gen/string</li>
+              <li>gen/pos-int</li>
+              <li>gen/byte</li>
+              <li>gen/elements</li>
             </ul>
           </section>
 
           <section>
-            <h2>Reusable Seed Data</h2>
+            <h2>Composite Generators</h2>
+            <p>These accept other generators as input, and modify them</p>
             <ul>
-              <li>Tests grab all project stories from database before run</li>
+              <li>gen/vector</li>
+              <li>gen/one-of</li>
+              <li>gen/such-that</li>
+              <li>gen/hash-map</li>
+              <li>gen/map</li>
+              <li>gen/frequency</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>Example Generators</h2>
+            <p>List of integers</p>
+            <pre><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+(gen/vector gen/int)
+            </code></pre>
+            <p>non-empty list of strings</p>
+<pre><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+(gen/not-empty (gen/vector gen/string))
+</code></pre>
+            <p>Hashmap with keys :first, :last, and :age</p>
+<pre><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+(gen/hash-map
+  :first gen/string-ascii
+  :last gen/string-ascii
+  :age gen/nat)
+</code></pre>
+            <p>List of mixed integers and strings</p>
+<pre><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+(gen/vector (gen/one-of [gen/int gen/string]))
+</code></pre>
+          </section>
+        </section>
+        <section>
+          <section>
+            <h2>Testing Techniques</h2>
+            <p>Generators are nice, but how do we make them work for us?</p>
+            <ol>
+              <li>Reset server state</li>
+              <li>Generate Actions</li>
+              <li>Perform Actions</li>
+              <li>Check client server parity</li>
+            </ol>
+          </section>
+          <section>
+            <h2>Reliable Server State</h2>
+            <ul>
+              <li>Database state copied before any tests run</li>
               <li>Reset original story state and expire cache after each run</li>
               <li>Ensures that each test starts at a clean state quickly</li>
             </ul>
           </section>
-
           <section>
             <h2>Actions as Data</h2>
             <p>Each test generates a list of hashmaps, each representing an action a user could take.</p>
             <p>A single function then runs those actions &amp; checks that nothing horrible happened.</p>
-	    <pre><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+      <pre><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
 [{:type ::change-state
   :story 2186
   :args [:finished]}]
-	    </code></pre>
+      </code></pre>
             <p>Easy copy &amp; paste to a unit test for repeatability</p>
             <p>Makes generating series of actions very easy</p>
+          </section>
+          <section>
+            <h2>Perform Actions</h2>
+            <p>Each type of action has a single function dedicated to execution</p>
+            <p>Use a mixture of dom state and internal state to validate actions</p>
+            <p>Isolated and very easy to test for correctness</p>
+          </section>
+          <section>
+            <h2>Server Client Parity</h2>
+            <p>Tests can touch the database and the browser for verification</p>
+            <p>The following checks are performed after all actions are run</p>
+            <br>
+            <ul>
+              <li>Check project version parity between database and browsers</li>
+              <li>Compare story order correct between database and browsers</li>
+              <li>Ensure that no force reload scrim exists</li>
+            </ul>
           </section>
         </section>
         <section>
